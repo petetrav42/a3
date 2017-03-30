@@ -2,42 +2,46 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CalculateTipRequest;
 use Illuminate\Http\Request;
 
 class TipCalculatorController extends Controller
 {
+    /**
+     * Return the base calculateTip view
+     * @param Request $request
+     * @return $this
+     */
     public function index(Request $request){
-        dump($request);
+        return view('calculateTip')->with([
+            'initialBill' => null,
+            'splitNumber' => $request->splitNumber,
+            'service' => $request->service,
+            'roundTip' => $request->roundTip]);
+    }
 
-        //Create an array to map the service quality to tip percentage
-        $tipPercentage = ['excellent' => 20,'good' => 18,'average' => 15,'poor' => 10,'horrible' => 0];
+    /**
+     * Return the calculated values to the calculateTip view
+     * @param CalculateTipRequest $request
+     * @return $this
+     */
+    public function calculate(CalculateTipRequest $request){
 
-        $initialBill = $request->input('initialBill', null);
-        $splitNumber = $request->input('splitNumber', null);
-        $service = $request->input('service', null);
-        $roundTip = $request->input('roundTip', null);
-
-
-        dump($initialBill);
-        dump($splitNumber);
-        dump($service);
-        dump($roundTip);
-
-
-        //Need to validate the form entries prior to submitting
-//        $this->validate($request, [
-//            'title' => 'required|min:3',
-//        ]);
-//
-        if ($initialBill)
+        //Only need to run the logic if there are submitted input values
+        if ($request->input())
         {
-//            $errors = $form->validate(['initialBill' => 'required|decimal',
-//                'splitNumber' => 'required|numeric',
-//                'service' => 'required']);
+            //Get all the input values from the form
+            $initialBill = $request->input('initialBill', null);
+            $splitNumber = $request->input('splitNumber', null);
+            $service = $request->input('service', null);
+            $roundTip = $request->input('roundTip', null);
 
-            //Only calculate tip if there are no form validation errors
-            //if (!$errors)
-            //{
+            //Create an array to map the service quality to tip percentage
+            $tipPercentage = ['excellent' => 20,'good' => 18,'average' => 15,'poor' => 10,'horrible' => 0];
+
+            //Only calculate tip if there are no form validation errors on the required fields
+            if ($initialBill && $splitNumber && $service)
+            {
                 //Calculate the bill based on service
                 $billWithTip = self::calculateBillWithTip($initialBill, $splitNumber, $service, $tipPercentage);
 
@@ -49,22 +53,27 @@ class TipCalculatorController extends Controller
                 {
                     $finalBill = self::roundTip($billWithTip, $roundTip);
                 }
-           // }
+            }
         }
-        dump($billWithTip);
-        dump($finalBill);
 
-        return view('/calculateTip')->with([
-            'initialBill' => $request->input('initialBill', null),
-            'splitNumber' => $request->input('splitNumber', null),
-            'service' => $request->input('service', null),
-            'roundTip' => $request->input('roundTip', null),
-            'billWithTip' => $request->input('billWithTip', null),
-            'finalBill' => $request->input('finalBill',null)]);
+        //Return the input values as well as other values to be used when displaying information to the user.
+        return view('calculateTip')->with([
+            'initialBill' => $initialBill,
+            'splitNumber' => $splitNumber,
+            'service' => $service,
+            'tipPercentage' => $tipPercentage[$service],
+            'roundTip' => $roundTip,
+            'billWithTip' => $billWithTip,
+            'finalBill' => $finalBill]);
     }
 
     /**
      * Returns the calculated bill depending on the tip amount
+     * @param $initialBill
+     * @param $splitNumber
+     * @param $service
+     * @param $tipPercentage
+     * @return float
      */
     public function calculateBillWithTip($initialBill, $splitNumber, $service, $tipPercentage)
     {
@@ -86,6 +95,9 @@ class TipCalculatorController extends Controller
 
     /**
      * Returns a rounded final bill if rounding is selected
+     * @param $amount
+     * @param $roundTip
+     * @return float
      */
     public function roundTip($amount, $roundTip)
     {

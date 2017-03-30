@@ -11,9 +11,9 @@
 |
 */
 
-Route::get('/calculateTip', 'TipCalculatorController@index');
+Route::get('/', 'TipCalculatorController@index');
 
-Route::get('/', 'WelcomeController');
+Route::get('/calculateTip', 'TipCalculatorController@calculate');
 
 if(config('app.env') == 'local'){
     Route::get('logs', '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index');
